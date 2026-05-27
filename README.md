@@ -1,13 +1,13 @@
 # WeaveLight
 
-基于 `main` 分支当前代码与已关闭 PR（#1、#2），v0.1 目前是**文档先行 + Node/TS sidecar 最小可运行骨架**，尚未达到“完整端到端 MVP（生成/预览/导出）”。
+基于 `main` 分支当前代码与已合并 PR（#1、#2），v0.1 目前是**文档先行 + Node/TS sidecar 最小可运行骨架**，尚未达到“完整端到端 MVP（生成/预览/导出）”。
 
 ## v0.1 MVP 实现清单（main 当前状态）
 
 ### 最近相关 PR / 提交
 - PR #1（已合并）：补齐技术方案文档集（架构、Engine API、Workspace、DOM Contract、PPTX IR、导出管线、安全等）。
 - PR #2（已合并）：提交 `engine/` Node/TS sidecar，落地 `workspace.init` 与 `generate.createSession`，并加入基础单测。
-- 主分支关键提交：`12a7038`（`Bootstrap v0.1 desktop sidecar...`）。
+- 主分支关键提交（短 SHA）：`12a7038`（完整 SHA：`12a70381fa1c17bc758b3dd7259c0c852e3bfc9b`，`Bootstrap v0.1 desktop sidecar...`）。
 
 ### 已完成
 - **Workspace 初始化**：`workspace/sessions`、`workspace/shared/fonts`、`workspace/shared/templates` 可自动创建。
@@ -66,21 +66,21 @@ curl -s http://127.0.0.1:3322/rpc \
 
 ### 1) 依赖安装
 ```bash
-cd /tmp/workspace/nardo-kong/WeaveLight/engine
+cd /path/to/WeaveLight/engine
 npm install
 ```
 预期：安装成功，无高危依赖告警。
 
 ### 2) 运行测试（本地）
 ```bash
-cd /tmp/workspace/nardo-kong/WeaveLight/engine
+cd /path/to/WeaveLight/engine
 npm test
 ```
 预期：`workspace.test` 通过（workspace 初始化、session 创建、非法 sessionId 拒绝）。
 
 ### 3) 启动 Engine
 ```bash
-cd /tmp/workspace/nardo-kong/WeaveLight/engine
+cd /path/to/WeaveLight/engine
 npm run start
 ```
 预期：输出 `WeaveLight engine sidecar listening on http://127.0.0.1:3322`。
@@ -113,7 +113,7 @@ cat /tmp/weavelight-workspace/sessions/demo_001/session.json
 
 ### 6) Flutter desktop / 生成 / 预览 / 导出（当前状态确认）
 ```bash
-ls -la /tmp/workspace/nardo-kong/WeaveLight/apps
+ls -la /path/to/WeaveLight/apps
 curl -s http://127.0.0.1:3322/rpc \
   -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":"req-generate","method":"generate.start","params":{"sessionId":"demo_001"}}'
@@ -126,7 +126,7 @@ curl -s http://127.0.0.1:3322/rpc \
 - `generate.start` / `export.start` 返回 `Method not found`（功能缺口与清单一致）。
 
 ### 7) 常见问题排查
-- `workspacePath must be absolute`：请使用绝对路径（如 `/tmp/weavelight-workspace`）。
-- `sessionId must only include letters, numbers, _ or -`：sessionId 仅允许字母/数字/`_`/`-`。
+- 绝对路径校验失败（当前实现示例：`workspacePath must be absolute`）：请使用绝对路径（如 `/tmp/weavelight-workspace`）。
+- sessionId 规则校验失败（当前实现示例：`sessionId must only include letters, numbers, _ or -`）：sessionId 仅允许字母/数字/`_`/`-`。
 - `EADDRINUSE: 3322`：设置 `WEAVELIGHT_ENGINE_PORT` 或释放端口后重启。
 - 请求返回 `Parse error`：检查 JSON 是否合法、引号是否转义。
