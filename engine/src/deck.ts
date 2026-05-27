@@ -22,6 +22,7 @@ export interface DeckNodeSnapshot {
 }
 
 const sessionSeq = new Map<string, number>();
+const ELEMENT_NODE = 1;
 const PARSE_OPTIONS = { lowerCaseTagName: false, comment: false, blockTextElements: { script: true, style: true } };
 
 function parseStyle(styleValue: string | null | undefined): Record<string, string> {
@@ -220,7 +221,7 @@ export async function applyPatch(
         }
         sanitizeHtmlFragment(op.html);
         const parsedNode = parse(op.html, PARSE_OPTIONS);
-        const elementChildren = parsedNode.childNodes.filter((child) => (child as { nodeType?: number }).nodeType === 1);
+        const elementChildren = parsedNode.childNodes.filter((child) => (child as { nodeType?: number }).nodeType === ELEMENT_NODE);
         if (elementChildren.length !== 1) {
           throw new EngineError(ERROR_CODE_CONTRACT_VIOLATION, 'insertNode.html must include exactly one root element');
         }

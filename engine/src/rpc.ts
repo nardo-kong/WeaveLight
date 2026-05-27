@@ -96,6 +96,15 @@ function requireWorkspaceFormat(params: Record<string, unknown>, name: string): 
   return value as 'session-zip' | 'slide-pack';
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export async function handleRpcRequest(request: JsonRpcRequest): Promise<JsonRpcResponse> {
   const { id } = request;
 
@@ -299,7 +308,11 @@ export async function handleRpcRequest(request: JsonRpcRequest): Promise<JsonRpc
           importedAt: new Date().toISOString(),
           note: 'PPTX import placeholder. Replace with real extraction pipeline.',
         };
-        await writePageFragment(created.sessionPath, 'page-1', `<div data-deck-root="true" data-page-id="page-1">Imported ${sourcePath}</div>`);
+        await writePageFragment(
+          created.sessionPath,
+          'page-1',
+          `<div data-deck-root="true" data-page-id="page-1">Imported ${escapeHtml(sourcePath)}</div>`,
+        );
         await writeFile(`${created.sessionPath}/docs/pptx-import.json`, JSON.stringify(note, null, 2), 'utf8');
         return { jsonrpc: '2.0', id, result: { sessionId } };
       }

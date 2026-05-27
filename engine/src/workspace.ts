@@ -238,13 +238,16 @@ export async function exportWorkspace(
   return { sessionId, format, outputPath: resolvedOutputPath };
 }
 
-function safeEntryPath(entryName: string): string {
-  const normalized = path.posix.normalize(entryName.replace(/\\/g, '/')).replace(/^\/+/, '');
-  const segments = normalized.split('/');
-  if (segments.some((segment) => segment === '..')) {
+function safeEntrySegments(entryName: string): string[] {
+  const normalized = path.posix.normalize(entryName.replace(/\\/g, '/'));
+  if (path.posix.isAbsolute(normalized)) {
     throw new EngineError(ERROR_CODE_INVALID_PARAMS, 'Archive entry path is invalid', { entry: entryName });
   }
-  return normalized;
+  const segments = normalized.split('/').filter(Boolean);
+  if (segments.length === 0 || segments.some((segment) => segment === '.' || segment === '..')) {
+    throw new EngineError(ERROR_CODE_INVALID_PARAMS, 'Archive entry path is invalid', { entry: entryName });
+  }
+  return segments;
 }
 
 export async function importWorkspace(
@@ -276,12 +279,12 @@ export async function importWorkspace(
     if (entry.isDirectory) {
       continue;
     }
-    const safePath = safeEntryPath(entry.entryName);
-    let targetRelative = path.join(...safePath.split('/'));
-    if (format === 'slide-pack' && safePath.startsWith('page-fragments/')) {
-      targetRelative = path.join('pages', ...safePath.slice('page-fragments/'.length).split('/'));
+    const safeSegments = safeEntrySegments(entry.entryName);
+    let targetSegments = safeSegments;
+    if (format === 'slide-pack' && safeSegments[0] === 'page-fragments') {
+      targetSegments = ['pages', ...safeSegments.slice(1)];
     }
-    const targetPath = path.resolve(sessionPath, targetRelative);
+    const targetPath = path.resolve(sessionPath, ...targetSegments);
     await ensureWithinRoots(targetPath, [sessionPath]);
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, entry.getData());

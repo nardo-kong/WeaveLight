@@ -22,13 +22,17 @@ function escapeHtml(value: string): string {
 }
 
 function sanitizeFontName(fontName: string, fallback: string): string {
-  const sanitized = fontName.replace(/[^a-zA-Z0-9 _-]/g, '').trim();
+  const sanitized = fontName.replace(/[^\p{L}\p{N}\p{M} _-]/gu, '').trim();
   return sanitized.length > 0 ? sanitized : fallback;
 }
 
+function escapeCssString(value: string): string {
+  return value.replace(/["\\]/g, '\\$&');
+}
+
 function buildPageFragment(pageId: string, prompt: string, canvasSpec: CanvasSpec, fontProfile?: FontProfile): string {
-  const titleFont = sanitizeFontName(fontProfile?.title ?? 'Inter', 'Inter');
-  const bodyFont = sanitizeFontName(fontProfile?.body ?? 'Noto Sans', 'Noto Sans');
+  const titleFont = `"${escapeCssString(sanitizeFontName(fontProfile?.title ?? 'Inter', 'Inter'))}"`;
+  const bodyFont = `"${escapeCssString(sanitizeFontName(fontProfile?.body ?? 'Noto Sans', 'Noto Sans'))}"`;
   const safePrompt = escapeHtml(prompt || 'New Slide');
   return `
 <section data-deck-root="true" data-page-id="${pageId}" data-canvas-spec="${canvasSpec.widthPx}x${canvasSpec.heightPx}">
