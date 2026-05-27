@@ -32,7 +32,7 @@
 ### 1) 启动 engine
 
 ```bash
-cd /tmp/workspace/nardo-kong/WeaveLight/engine
+cd engine
 npm install
 npm run start
 ```
@@ -92,7 +92,7 @@ curl -s http://127.0.0.1:3322/rpc \
 可先用以下命令确认仓库现状：
 
 ```bash
-find /tmp/workspace/nardo-kong/WeaveLight -maxdepth 2 -name pubspec.yaml
+find . -maxdepth 2 -name pubspec.yaml
 ```
 
 ### 7) PDF/PNG 文件落盘验证（当前状态）
@@ -114,7 +114,7 @@ workspace/
 ## 现有自动化测试
 
 ```bash
-cd /tmp/workspace/nardo-kong/WeaveLight/engine
+cd engine
 npm test
 ```
 
