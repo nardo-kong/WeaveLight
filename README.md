@@ -5,7 +5,7 @@ MVP（v0.1）当前提供 Node/TypeScript 本地 sidecar（桌面端优先），
 ## Engine（Node/TS）
 
 ```bash
-cd /tmp/workspace/nardo-kong/WeaveLight/engine
+cd engine
 npm install
 npm run start
 ```
