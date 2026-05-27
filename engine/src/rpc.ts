@@ -24,13 +24,24 @@ interface JsonRpcError {
 }
 
 export type JsonRpcResponse = JsonRpcSuccess | JsonRpcError;
+export const ERROR_CODE_INVALID_PARAMS = 1001;
+export const ERROR_CODE_ENGINE_INTERNAL = 2001;
+
+export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const maybeRequest = value as Partial<JsonRpcRequest>;
+  return maybeRequest.jsonrpc === '2.0' && typeof maybeRequest.method === 'string' && 'id' in maybeRequest;
+}
 
 function invalidParams(id: string | number | null, message: string): JsonRpcError {
   return {
     jsonrpc: '2.0',
     id,
     error: {
-      code: 1001,
+      code: ERROR_CODE_INVALID_PARAMS,
       message,
     },
   };
@@ -81,7 +92,7 @@ export async function handleRpcRequest(request: JsonRpcRequest): Promise<JsonRpc
       jsonrpc: '2.0',
       id,
       error: {
-        code: 2001,
+        code: ERROR_CODE_ENGINE_INTERNAL,
         message: error instanceof Error ? error.message : 'Internal error',
       },
     };

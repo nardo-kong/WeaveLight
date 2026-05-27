@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { handleRpcRequest } from './rpc';
+import { handleRpcRequest, isJsonRpcRequest } from './rpc';
 
 const port = Number(process.env.WEAVELIGHT_ENGINE_PORT ?? 3322);
 
@@ -30,7 +30,13 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  const response = await handleRpcRequest(payload as never);
+  if (!isJsonRpcRequest(payload)) {
+    res.writeHead(400, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid Request' } }));
+    return;
+  }
+
+  const response = await handleRpcRequest(payload);
   res.writeHead(200, { 'content-type': 'application/json' });
   res.end(JSON.stringify(response));
 });
