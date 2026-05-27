@@ -29,6 +29,11 @@ export interface FontImportResult {
 
 const SUPPORTED_EXTS = new Set(['.woff2', '.ttf', '.otf']);
 
+function sanitizeFileComponent(value: string, fallback: string): string {
+  const sanitized = value.replace(/[^\p{L}\p{N}\p{M}_-]+/gu, '-').replace(/-+/g, '-').replace(/^[-_]+|[-_]+$/g, '');
+  return sanitized.length > 0 ? sanitized : fallback;
+}
+
 async function loadManifest(sessionPath: string): Promise<FontManifest> {
   const manifestPath = path.join(sessionPath, 'fonts', 'manifest.json');
   try {
@@ -76,8 +81,9 @@ export async function importFont(
 
   const filesDir = path.join(sessionPath, 'fonts', 'files');
   await mkdir(filesDir, { recursive: true });
-  const safeFamily = family.replace(/\s+/g, '-');
-  const fileName = `${safeFamily}-${weight}-${style}${ext}`;
+  const safeFamily = sanitizeFileComponent(family, 'font');
+  const safeStyle = sanitizeFileComponent(style, 'normal');
+  const fileName = `${safeFamily}-${weight}-${safeStyle}${ext}`;
   const targetPath = path.join(filesDir, fileName);
   await copyFile(resolvedSource, targetPath);
 

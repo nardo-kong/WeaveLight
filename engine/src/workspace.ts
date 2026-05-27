@@ -240,7 +240,8 @@ export async function exportWorkspace(
 
 function safeEntryPath(entryName: string): string {
   const normalized = path.posix.normalize(entryName.replace(/\\/g, '/')).replace(/^\/+/, '');
-  if (normalized.startsWith('..') || normalized.includes('/..')) {
+  const segments = normalized.split('/');
+  if (segments.some((segment) => segment === '..')) {
     throw new EngineError(ERROR_CODE_INVALID_PARAMS, 'Archive entry path is invalid', { entry: entryName });
   }
   return normalized;
@@ -281,9 +282,7 @@ export async function importWorkspace(
       targetRelative = path.join('pages', ...safePath.slice('page-fragments/'.length).split('/'));
     }
     const targetPath = path.resolve(sessionPath, targetRelative);
-    if (!(targetPath === sessionPath || targetPath.startsWith(`${sessionPath}${path.sep}`))) {
-      throw new EngineError(ERROR_CODE_INVALID_PARAMS, 'Archive entry path escapes session root', { entry: entry.entryName });
-    }
+    await ensureWithinRoots(targetPath, [sessionPath]);
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, entry.getData());
   }

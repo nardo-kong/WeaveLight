@@ -22,6 +22,7 @@ export interface DeckNodeSnapshot {
 }
 
 const sessionSeq = new Map<string, number>();
+const PARSE_OPTIONS = { lowerCaseTagName: false, comment: false, blockTextElements: { script: true, style: true } };
 
 function parseStyle(styleValue: string | null | undefined): Record<string, string> {
   if (!styleValue) {
@@ -59,7 +60,7 @@ function validateNoScriptAttributes(attributes: Record<string, string>): void {
 }
 
 function sanitizeHtmlFragment(html: string): void {
-  const root = parse(html, { lowerCaseTagName: false, comment: false });
+  const root = parse(html, PARSE_OPTIONS);
   const nodes = [root, ...root.querySelectorAll('*')];
   for (const node of nodes) {
     if (['SCRIPT', 'IFRAME', 'OBJECT', 'EMBED'].includes(node.tagName)) {
@@ -132,7 +133,7 @@ export async function listPageFragments(sessionPath: string): Promise<Array<{ pa
 
 export async function inspectNode(sessionPath: string, pageId: string, nodeId: string): Promise<DeckNodeSnapshot> {
   const fragment = await readPageFragment(sessionPath, pageId);
-  const root = parse(fragment, { lowerCaseTagName: false, comment: false });
+  const root = parse(fragment, PARSE_OPTIONS);
   const node = root.querySelector(`[data-node-id="${nodeId}"]`);
   if (!node) {
     throw new EngineError(ERROR_CODE_NOT_FOUND, 'Node not found', { nodeId });
@@ -168,7 +169,7 @@ export async function applyPatch(
   actor = 'engine',
 ): Promise<{ pageId: string; applied: number; seq: number }> {
   const fragment = await readPageFragment(sessionPath, pageId);
-  const root = parse(fragment, { lowerCaseTagName: false, comment: false });
+  const root = parse(fragment, PARSE_OPTIONS);
 
   for (const op of patch) {
     switch (op.op) {
@@ -218,11 +219,12 @@ export async function applyPatch(
           throw new EngineError(ERROR_CODE_INVALID_PARAMS, 'insertNode.html must be a string');
         }
         sanitizeHtmlFragment(op.html);
-        const parsedNode = parse(op.html, { lowerCaseTagName: false, comment: false });
-        const newNode = parsedNode.firstChild;
-        if (!newNode) {
-          throw new EngineError(ERROR_CODE_CONTRACT_VIOLATION, 'insertNode.html must include a node');
+        const parsedNode = parse(op.html, PARSE_OPTIONS);
+        const elementChildren = parsedNode.childNodes.filter((child) => (child as { nodeType?: number }).nodeType === 1);
+        if (elementChildren.length !== 1) {
+          throw new EngineError(ERROR_CODE_CONTRACT_VIOLATION, 'insertNode.html must include exactly one root element');
         }
+        const newNode = elementChildren[0];
         if (op.beforeNodeId) {
           const beforeNode = parent.querySelector(`[data-node-id="${op.beforeNodeId}"]`);
           if (beforeNode) {

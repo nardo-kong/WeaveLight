@@ -147,7 +147,9 @@ export async function handleRpcRequest(request: JsonRpcRequest): Promise<JsonRpc
         const workspacePath = requireString(params, 'workspacePath');
         const sessionId = requireString(params, 'sessionId');
         const canvasSpec =
-          typeof params.canvasSpec === 'object' && params.canvasSpec ? (params.canvasSpec as Partial<CanvasSpec>) : undefined;
+          typeof params.canvasSpec === 'object' && params.canvasSpec !== null
+            ? (params.canvasSpec as Partial<CanvasSpec>)
+            : undefined;
         return {
           jsonrpc: '2.0',
           id,
@@ -158,8 +160,14 @@ export async function handleRpcRequest(request: JsonRpcRequest): Promise<JsonRpc
         const workspacePath = requireString(params, 'workspacePath');
         const sessionId = requireString(params, 'sessionId');
         const prompt = typeof params.prompt === 'string' ? params.prompt : '';
-        const fontProfile = typeof params.fontProfile === 'object' ? (params.fontProfile as Record<string, string>) : undefined;
-        const canvasSpec = typeof params.canvasSpec === 'object' ? (params.canvasSpec as Partial<CanvasSpec>) : undefined;
+        const fontProfile =
+          typeof params.fontProfile === 'object' && params.fontProfile !== null
+            ? (params.fontProfile as Record<string, string>)
+            : undefined;
+        const canvasSpec =
+          typeof params.canvasSpec === 'object' && params.canvasSpec !== null
+            ? (params.canvasSpec as Partial<CanvasSpec>)
+            : undefined;
         const { sessionPath, meta } = await openSession(workspacePath, sessionId);
         const job = jobManager.startJob('generation', sessionId, id, async () =>
           runGeneration(sessionPath, canvasSpec ? { ...meta.canvasSpec, ...canvasSpec } : meta.canvasSpec, prompt, fontProfile),
@@ -262,7 +270,10 @@ export async function handleRpcRequest(request: JsonRpcRequest): Promise<JsonRpc
         const workspacePath = requireString(params, 'workspacePath');
         const sessionId = requireString(params, 'sessionId');
         const format = requireString(params, 'format');
-        const canvasSpec = typeof params.canvasSpec === 'object' ? (params.canvasSpec as Partial<CanvasSpec>) : undefined;
+        const canvasSpec =
+          typeof params.canvasSpec === 'object' && params.canvasSpec !== null
+            ? (params.canvasSpec as Partial<CanvasSpec>)
+            : undefined;
         const fontManifestRef = typeof params.fontManifestRef === 'string' ? params.fontManifestRef : undefined;
         const { sessionPath, meta } = await openSession(workspacePath, sessionId);
         const job = jobManager.startJob('export', sessionId, id, async () =>
