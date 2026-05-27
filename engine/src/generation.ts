@@ -12,10 +12,24 @@ export interface GenerationResult {
   pageIds: string[];
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function sanitizeFontName(fontName: string, fallback: string): string {
+  const sanitized = fontName.replace(/[^a-zA-Z0-9 _-]/g, '').trim();
+  return sanitized.length > 0 ? sanitized : fallback;
+}
+
 function buildPageFragment(pageId: string, prompt: string, canvasSpec: CanvasSpec, fontProfile?: FontProfile): string {
-  const titleFont = fontProfile?.title ?? 'Inter';
-  const bodyFont = fontProfile?.body ?? 'Noto Sans';
-  const safePrompt = prompt || 'New Slide';
+  const titleFont = sanitizeFontName(fontProfile?.title ?? 'Inter', 'Inter');
+  const bodyFont = sanitizeFontName(fontProfile?.body ?? 'Noto Sans', 'Noto Sans');
+  const safePrompt = escapeHtml(prompt || 'New Slide');
   return `
 <section data-deck-root="true" data-page-id="${pageId}" data-canvas-spec="${canvasSpec.widthPx}x${canvasSpec.heightPx}">
   <div data-node-id="${pageId}-title" data-node-type="text" data-page-id="${pageId}" style="left:120px; top:120px; font-size:54px; font-family:${titleFont}; font-weight:600;">

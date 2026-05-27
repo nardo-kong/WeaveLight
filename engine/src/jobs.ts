@@ -115,10 +115,10 @@ class JobManager {
     job.status = 'cancelled';
     job.updatedAt = new Date().toISOString();
     eventBus.emit({
-      type: 'job.failed',
+      type: 'job.cancelled',
       requestId: job.requestId,
       jobId,
-      payload: { error: 'Cancelled', sessionId: job.sessionId },
+      payload: { sessionId: job.sessionId },
     });
     return job;
   }

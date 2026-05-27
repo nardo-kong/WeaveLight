@@ -239,8 +239,8 @@ export async function exportWorkspace(
 }
 
 function safeEntryPath(entryName: string): string {
-  const normalized = path.normalize(entryName).replace(/^([/\\]+)/, '');
-  if (normalized.includes('..')) {
+  const normalized = path.posix.normalize(entryName.replace(/\\/g, '/')).replace(/^\/+/, '');
+  if (normalized.startsWith('..') || normalized.includes('/..')) {
     throw new EngineError(ERROR_CODE_INVALID_PARAMS, 'Archive entry path is invalid', { entry: entryName });
   }
   return normalized;
@@ -276,12 +276,14 @@ export async function importWorkspace(
       continue;
     }
     const safePath = safeEntryPath(entry.entryName);
-    let targetRelative = safePath;
-    if (format === 'slide-pack' && safePath.startsWith(`page-fragments${path.sep}`)) {
-      targetRelative = path.join('pages', safePath.slice(`page-fragments${path.sep}`.length));
+    let targetRelative = path.join(...safePath.split('/'));
+    if (format === 'slide-pack' && safePath.startsWith('page-fragments/')) {
+      targetRelative = path.join('pages', ...safePath.slice('page-fragments/'.length).split('/'));
     }
-    const targetPath = path.join(sessionPath, targetRelative);
-    await ensureWithinRoots(targetPath, [sessionPath]);
+    const targetPath = path.resolve(sessionPath, targetRelative);
+    if (!(targetPath === sessionPath || targetPath.startsWith(`${sessionPath}${path.sep}`))) {
+      throw new EngineError(ERROR_CODE_INVALID_PARAMS, 'Archive entry path escapes session root', { entry: entry.entryName });
+    }
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, entry.getData());
   }

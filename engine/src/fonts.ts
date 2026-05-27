@@ -24,6 +24,7 @@ export interface FontManifest {
 export interface FontImportResult {
   manifest: FontManifest;
   imported: FontFileEntry;
+  replaced: boolean;
 }
 
 const SUPPORTED_EXTS = new Set(['.woff2', '.ttf', '.otf']);
@@ -87,6 +88,7 @@ export async function importFont(
     manifest.families.push(familyEntry);
   }
   const newFile = { weight, style, path: `files/${fileName}` };
+  const replaced = familyEntry.files.some((file) => file.weight === weight && file.style === style);
   familyEntry.files = familyEntry.files.filter((file) => !(file.weight === weight && file.style === style));
   familyEntry.files.push(newFile);
   if (role) {
@@ -94,7 +96,7 @@ export async function importFont(
   }
 
   await saveManifest(sessionPath, manifest);
-  return { manifest, imported: newFile };
+  return { manifest, imported: newFile, replaced };
 }
 
 export async function listFonts(sessionPath: string): Promise<FontManifest> {

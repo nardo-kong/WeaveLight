@@ -47,6 +47,28 @@ function serializeStyle(style: Record<string, string>): string {
     .join('; ');
 }
 
+function validateNoScriptAttributes(attributes: Record<string, string>): void {
+  for (const [key, value] of Object.entries(attributes)) {
+    if (key.toLowerCase().startsWith('on')) {
+      throw new EngineError(ERROR_CODE_CONTRACT_VIOLATION, 'Event handler attributes are not allowed');
+    }
+    if (/javascript:/i.test(value)) {
+      throw new EngineError(ERROR_CODE_CONTRACT_VIOLATION, 'javascript: URLs are not allowed');
+    }
+  }
+}
+
+function sanitizeHtmlFragment(html: string): void {
+  const root = parse(html, { lowerCaseTagName: false, comment: false });
+  const nodes = [root, ...root.querySelectorAll('*')];
+  for (const node of nodes) {
+    if (['SCRIPT', 'IFRAME', 'OBJECT', 'EMBED'].includes(node.tagName)) {
+      throw new EngineError(ERROR_CODE_CONTRACT_VIOLATION, `Tag ${node.tagName.toLowerCase()} is not allowed`);
+    }
+    validateNoScriptAttributes(node.attributes);
+  }
+}
+
 async function getNextSeq(sessionPath: string): Promise<number> {
   if (!sessionSeq.has(sessionPath)) {
     try {
@@ -165,7 +187,9 @@ export async function applyPatch(
         if (!node) {
           throw new EngineError(ERROR_CODE_NOT_FOUND, 'Node not found', { nodeId });
         }
-        node.setAttribute(ensureString(op.name, 'name'), op.value);
+        const attributeName = ensureString(op.name, 'name');
+        validateNoScriptAttributes({ [attributeName]: op.value });
+        node.setAttribute(attributeName, op.value);
         break;
       }
       case 'setStyle': {
@@ -193,6 +217,7 @@ export async function applyPatch(
         if (!op.html || typeof op.html !== 'string') {
           throw new EngineError(ERROR_CODE_INVALID_PARAMS, 'insertNode.html must be a string');
         }
+        sanitizeHtmlFragment(op.html);
         const parsedNode = parse(op.html, { lowerCaseTagName: false, comment: false });
         const newNode = parsedNode.firstChild;
         if (!newNode) {
@@ -234,10 +259,9 @@ export async function applyPatch(
         break;
       }
       default:
-        throw new EngineError(
-          ERROR_CODE_CONTRACT_VIOLATION,
-          `Unsupported patch op: ${(op as DeckPatchOp).op}. Supported ops: setText, setAttr, setStyle, insertNode, removeNode, reorderZ`,
-        );
+        throw new EngineError(ERROR_CODE_CONTRACT_VIOLATION, 'Unsupported patch operation', {
+          supported: ['setText', 'setAttr', 'setStyle', 'insertNode', 'removeNode', 'reorderZ'],
+        });
     }
   }
 

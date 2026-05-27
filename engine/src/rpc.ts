@@ -86,6 +86,16 @@ function requireArray(params: Record<string, unknown>, name: string): unknown[] 
   return value;
 }
 
+const WORKSPACE_FORMATS = new Set(['session-zip', 'slide-pack']);
+
+function requireWorkspaceFormat(params: Record<string, unknown>, name: string): 'session-zip' | 'slide-pack' {
+  const value = requireString(params, name);
+  if (!WORKSPACE_FORMATS.has(value)) {
+    throw new EngineError(ERROR_CODE_INVALID_PARAMS, `${name} must be one of: session-zip, slide-pack`);
+  }
+  return value as 'session-zip' | 'slide-pack';
+}
+
 export async function handleRpcRequest(request: JsonRpcRequest): Promise<JsonRpcResponse> {
   const { id } = request;
 
@@ -112,7 +122,7 @@ export async function handleRpcRequest(request: JsonRpcRequest): Promise<JsonRpc
       case 'workspace.import': {
         const workspacePath = requireString(params, 'workspacePath');
         const archivePath = requireString(params, 'archivePath');
-        const format = requireString(params, 'format') as 'session-zip' | 'slide-pack';
+        const format = requireWorkspaceFormat(params, 'format');
         const sessionId = typeof params.sessionId === 'string' ? params.sessionId : undefined;
         const importRoot = typeof params.importRoot === 'string' ? params.importRoot : undefined;
         return {
@@ -124,7 +134,7 @@ export async function handleRpcRequest(request: JsonRpcRequest): Promise<JsonRpc
       case 'workspace.export': {
         const workspacePath = requireString(params, 'workspacePath');
         const sessionId = requireString(params, 'sessionId');
-        const format = requireString(params, 'format') as 'session-zip' | 'slide-pack';
+        const format = requireWorkspaceFormat(params, 'format');
         const outputPath = typeof params.outputPath === 'string' ? params.outputPath : undefined;
         const outputRoot = typeof params.outputRoot === 'string' ? params.outputRoot : undefined;
         return {
