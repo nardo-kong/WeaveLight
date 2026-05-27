@@ -33,7 +33,13 @@ export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
   }
 
   const maybeRequest = value as Partial<JsonRpcRequest>;
-  return maybeRequest.jsonrpc === '2.0' && typeof maybeRequest.method === 'string' && 'id' in maybeRequest;
+  const hasValidId =
+    maybeRequest.id === null || typeof maybeRequest.id === 'string' || typeof maybeRequest.id === 'number';
+  const hasValidParams =
+    maybeRequest.params === undefined ||
+    (typeof maybeRequest.params === 'object' && maybeRequest.params !== null);
+
+  return maybeRequest.jsonrpc === '2.0' && typeof maybeRequest.method === 'string' && hasValidId && hasValidParams;
 }
 
 function invalidParams(id: string | number | null, message: string): JsonRpcError {
