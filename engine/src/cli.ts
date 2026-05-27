@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { eventBus } from './jobs';
 import { handleRpcRequest, isJsonRpcRequest } from './rpc';
 
 const port = Number(process.env.WEAVELIGHT_ENGINE_PORT ?? 3322);
@@ -7,6 +8,33 @@ const server = createServer(async (req, res) => {
   if (req.method === 'GET' && req.url === '/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  if (req.method === 'GET' && req.url?.startsWith('/events')) {
+    const url = new URL(req.url, 'http://127.0.0.1');
+    const sessionId = url.searchParams.get('sessionId');
+    const jobId = url.searchParams.get('jobId');
+
+    res.writeHead(200, {
+      'content-type': 'text/event-stream',
+      'cache-control': 'no-cache',
+      connection: 'keep-alive',
+    });
+    res.write('\n');
+    const unsubscribe = eventBus.on((event) => {
+      if (sessionId && event.payload?.sessionId !== sessionId) {
+        return;
+      }
+      if (jobId && event.jobId !== jobId) {
+        return;
+      }
+      res.write(`event: ${event.type}\n`);
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    });
+    req.on('close', () => {
+      unsubscribe();
+    });
     return;
   }
 
