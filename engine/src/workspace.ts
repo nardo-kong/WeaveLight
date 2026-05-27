@@ -32,12 +32,11 @@ function assertAbsoluteWorkspacePath(workspacePath: string): string {
     throw new Error('workspacePath is required');
   }
 
-  const absolute = path.resolve(workspacePath);
-  if (!path.isAbsolute(absolute)) {
+  if (!path.isAbsolute(workspacePath)) {
     throw new Error('workspacePath must be absolute');
   }
 
-  return absolute;
+  return path.resolve(workspacePath);
 }
 
 export async function initWorkspace(workspacePath: string): Promise<WorkspaceInitResult> {
