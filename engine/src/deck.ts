@@ -234,7 +234,10 @@ export async function applyPatch(
         break;
       }
       default:
-        throw new EngineError(ERROR_CODE_CONTRACT_VIOLATION, `Unsupported patch op: ${(op as DeckPatchOp).op}`);
+        throw new EngineError(
+          ERROR_CODE_CONTRACT_VIOLATION,
+          `Unsupported patch op: ${(op as DeckPatchOp).op}. Supported ops: setText, setAttr, setStyle, insertNode, removeNode, reorderZ`,
+        );
     }
   }
 

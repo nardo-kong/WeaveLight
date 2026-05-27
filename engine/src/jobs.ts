@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { EngineError, ERROR_CODE_JOB_CONFLICT, ERROR_CODE_NOT_FOUND } from './errors';
 
@@ -54,7 +55,7 @@ class JobManager {
   private jobs = new Map<string, JobRecord>();
 
   startJob(type: string, sessionId: string | undefined, requestId: string | number | null, runner: JobRunner): JobRecord {
-    const jobId = `${type}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const jobId = `${type}-${randomUUID()}`;
     if (this.jobs.has(jobId)) {
       throw new EngineError(ERROR_CODE_JOB_CONFLICT, 'Job conflict');
     }

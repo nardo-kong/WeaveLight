@@ -268,8 +268,8 @@ export async function importWorkspace(
   const entries = zip.getEntries() as IZipEntry[];
   const manifestEntry = entries.find((entry) => entry.entryName === 'manifest.json');
   const manifest = manifestEntry ? (JSON.parse(manifestEntry.getData().toString('utf8')) as SessionMeta) : null;
-  const effectiveSessionId = sessionId ?? manifest?.sessionId ?? `session-${Date.now()}`;
-  const { sessionPath } = await createSession(workspacePath, effectiveSessionId, manifest?.canvasSpec);
+  const resolvedSessionId = sessionId ?? manifest?.sessionId ?? `session-${Date.now()}`;
+  const { sessionPath } = await createSession(workspacePath, resolvedSessionId, manifest?.canvasSpec);
 
   for (const entry of entries) {
     if (entry.isDirectory) {
@@ -287,8 +287,8 @@ export async function importWorkspace(
   }
 
   if (manifest) {
-    await writeFile(path.join(sessionPath, 'session.json'), JSON.stringify({ ...manifest, sessionId: effectiveSessionId }, null, 2));
+    await writeFile(path.join(sessionPath, 'session.json'), JSON.stringify({ ...manifest, sessionId: resolvedSessionId }, null, 2));
   }
 
-  return { sessionId: effectiveSessionId, sessionPath, importedFrom: resolvedArchivePath };
+  return { sessionId: resolvedSessionId, sessionPath, importedFrom: resolvedArchivePath };
 }
