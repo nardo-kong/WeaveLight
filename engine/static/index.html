@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WeaveLight Editor</title>
+  <link rel="stylesheet" href="/app/app.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>WeaveLight Editor</h1>
+      <p class="status" id="engine-status">Engine: checking...</p>
+    </header>
+
+    <section class="controls">
+      <div class="field">
+        <label>Workspace Path</label>
+        <input id="workspace-path" type="text" value="/tmp/weavelight-workspace" />
+      </div>
+      <div class="field">
+        <label>Session ID</label>
+        <input id="session-id" type="text" value="demo-session" />
+      </div>
+      <div class="field">
+        <label>Canvas</label>
+        <input id="canvas-width" type="number" value="1920" />
+        <span>×</span>
+        <input id="canvas-height" type="number" value="1080" />
+      </div>
+      <div class="field">
+        <label>Prompt</label>
+        <input id="prompt" type="text" value="Hello WeaveLight" />
+      </div>
+      <div class="actions">
+        <button id="btn-init">Init Workspace</button>
+        <button id="btn-create">Create Session</button>
+        <button id="btn-generate">Generate</button>
+        <button id="btn-refresh">Load Pages</button>
+        <button id="btn-export-png">Export PNG</button>
+        <button id="btn-export-pdf">Export PDF</button>
+      </div>
+    </section>
+
+    <main>
+      <aside class="sidebar">
+        <h2>Pages</h2>
+        <ul id="pages"></ul>
+      </aside>
+
+      <section class="canvas-wrap">
+        <div id="canvas" class="canvas"></div>
+      </section>
+
+      <aside class="sidebar inspector">
+        <h2>Inspector</h2>
+        <div class="field">
+          <label>Selected Node</label>
+          <input id="selected-node" type="text" readonly />
+        </div>
+        <div class="field">
+          <label>Text</label>
+          <textarea id="selected-text" rows="5" placeholder="Select a text node"></textarea>
+        </div>
+        <div class="field inline">
+          <label>X</label>
+          <input id="selected-x" type="number" />
+          <label>Y</label>
+          <input id="selected-y" type="number" />
+        </div>
+        <div class="field inline">
+          <label>Font Size</label>
+          <input id="selected-font" type="number" />
+          <label>Color</label>
+          <input id="selected-color" type="text" placeholder="#111" />
+        </div>
+        <div class="actions">
+          <button id="btn-apply">Apply Changes</button>
+        </div>
+      </aside>
+    </main>
+
+    <section class="log">
+      <h2>Events</h2>
+      <pre id="events"></pre>
+    </section>
+  </div>
+
+  <script src="/app/app.js"></script>
+</body>
+</html>

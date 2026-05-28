@@ -1,8 +1,52 @@
-import { createServer } from 'node:http';
+import { readFile, realpath, stat } from 'node:fs/promises';
+import { createServer, IncomingMessage, ServerResponse } from 'node:http';
+import path from 'node:path';
 import { eventBus } from './jobs';
 import { handleRpcRequest, isJsonRpcRequest } from './rpc';
 
 const port = Number(process.env.WEAVELIGHT_ENGINE_PORT ?? 3322);
+const staticRoot = path.join(__dirname, '..', 'static');
+
+const CONTENT_TYPES: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+};
+
+async function tryServeStatic(req: IncomingMessage, res: ServerResponse<IncomingMessage>): Promise<boolean> {
+  if (!req.url || (!req.url.startsWith('/app') && req.url !== '/')) {
+    return false;
+  }
+
+  const url = new URL(req.url, 'http://127.0.0.1');
+  const pathname = decodeURIComponent(url.pathname);
+  const withoutPrefix = pathname.replace('/app', '');
+  const relativePath =
+    pathname === '/' || withoutPrefix === '' || withoutPrefix === '/' ? '/index.html' : withoutPrefix;
+  const safePath = path.normalize(relativePath);
+  const filePath = path.resolve(staticRoot, `.${safePath}`);
+
+  try {
+    const fileStat = await stat(filePath);
+    if (!fileStat.isFile()) {
+      return false;
+    }
+    const resolvedRoot = await realpath(staticRoot);
+    const resolvedFile = await realpath(filePath);
+    if (!resolvedFile.startsWith(`${resolvedRoot}${path.sep}`)) {
+      return false;
+    }
+    const ext = path.extname(filePath);
+    const contentType = CONTENT_TYPES[ext] ?? 'application/octet-stream';
+    const body = await readFile(filePath);
+    res.writeHead(200, { 'content-type': contentType });
+    res.end(body);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const server = createServer(async (req, res) => {
   if (req.method === 'GET' && req.url === '/health') {
@@ -36,6 +80,13 @@ const server = createServer(async (req, res) => {
       unsubscribe();
     });
     return;
+  }
+
+  if (req.method === 'GET' && (req.url === '/' || req.url?.startsWith('/app'))) {
+    const served = await tryServeStatic(req, res);
+    if (served) {
+      return;
+    }
   }
 
   if (req.method !== 'POST' || req.url !== '/rpc') {

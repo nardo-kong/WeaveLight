@@ -37,3 +37,33 @@ SSE 示例：
 ```bash
 curl -N http://127.0.0.1:3322/events
 ```
+
+## Web 编辑器
+
+Engine 自带一个轻量 Web 编辑器，用于手动编辑 page fragment、拖拽布局与触发生成/导出。
+
+1) 启动 Engine：
+
+```bash
+cd engine
+npm run start
+```
+
+2) 打开浏览器（`/app` 或 `/app/` 均可）：
+
+```
+http://127.0.0.1:3322/app
+```
+
+3) 在页面中依次点击：
+   - **Init Workspace** → **Create Session** → **Generate** → **Load Pages**
+   - 选择页面后可拖拽元素，修改文本与样式，然后 **Apply Changes**
+   - **Export PNG / Export PDF** 生成导出文件
+
+### 导出依赖
+
+PNG/PDF 导出使用本机 Chromium 进行渲染。默认使用 `/usr/bin/chromium`，如路径不同可设置：
+
+```bash
+export WEAVELIGHT_CHROMIUM_PATH=/path/to/chromium
+```
