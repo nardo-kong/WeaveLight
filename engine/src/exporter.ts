@@ -12,13 +12,15 @@ export interface ExportResult {
 }
 
 const DEFAULT_CHROMIUM_PATH = '/usr/bin/chromium';
-const EXPORT_CSS = `
-@page { size: CANVAS_WIDTHpx CANVAS_HEIGHTpx; margin: 0; }
+function buildExportCss(canvasSpec: CanvasSpec): string {
+  return `
+@page { size: ${canvasSpec.widthPx}px ${canvasSpec.heightPx}px; margin: 0; }
 html, body { margin: 0; padding: 0; }
 body { background: #fff; }
 .page { position: relative; overflow: hidden; page-break-after: always; }
 [data-deck-root="true"] { position: relative; width: 100%; height: 100%; }
 `.trim();
+}
 
 export function buildExportHtml(
   pages: Array<{ pageId: string; fragment: string }>,
@@ -26,7 +28,7 @@ export function buildExportHtml(
 ): string {
   const { widthPx, heightPx } = canvasSpec;
   const pageStyle = `width:${widthPx}px;height:${heightPx}px;`;
-  const css = EXPORT_CSS.replace('CANVAS_WIDTH', String(widthPx)).replace('CANVAS_HEIGHT', String(heightPx));
+  const css = buildExportCss(canvasSpec);
   const pageBody = pages
     .map(
       (page) =>

@@ -20,11 +20,15 @@ async function tryServeStatic(req: IncomingMessage, res: ServerResponse<Incoming
   }
 
   const url = new URL(req.url, 'http://127.0.0.1');
-  const withoutPrefix = url.pathname.replace('/app', '');
+  const pathname = decodeURIComponent(url.pathname);
+  const withoutPrefix = pathname.replace('/app', '');
   const relativePath =
-    url.pathname === '/' || withoutPrefix === '' || withoutPrefix === '/' ? '/index.html' : withoutPrefix;
-  const safePath = path.normalize(relativePath).replace(/^(\.\.[/\\])+/, '');
-  const filePath = path.join(staticRoot, safePath);
+    pathname === '/' || withoutPrefix === '' || withoutPrefix === '/' ? '/index.html' : withoutPrefix;
+  const safePath = path.normalize(relativePath);
+  const filePath = path.resolve(staticRoot, `.${safePath}`);
+  if (!filePath.startsWith(`${staticRoot}${path.sep}`)) {
+    return false;
+  }
 
   try {
     const fileStat = await stat(filePath);
