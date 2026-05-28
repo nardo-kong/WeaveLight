@@ -1,5 +1,5 @@
 import { readFile, stat } from 'node:fs/promises';
-import { createServer } from 'node:http';
+import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import path from 'node:path';
 import { eventBus } from './jobs';
 import { handleRpcRequest, isJsonRpcRequest } from './rpc';
@@ -14,7 +14,7 @@ const CONTENT_TYPES: Record<string, string> = {
   '.json': 'application/json; charset=utf-8',
 };
 
-async function tryServeStatic(req: { url?: string }, res: { writeHead: Function; end: Function }): Promise<boolean> {
+async function tryServeStatic(req: IncomingMessage, res: ServerResponse<IncomingMessage>): Promise<boolean> {
   if (!req.url || (!req.url.startsWith('/app') && req.url !== '/')) {
     return false;
   }

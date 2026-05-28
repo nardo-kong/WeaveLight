@@ -268,7 +268,7 @@ function setupEvents() {
     });
   });
   source.onerror = () => {
-    logEvent('SSE disconnected');
+    logEvent(`SSE disconnected (readyState=${source.readyState})`);
   };
 }
 

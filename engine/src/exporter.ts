@@ -1,4 +1,5 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { constants as fsConstants } from 'node:fs';
+import { access, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { launch } from 'puppeteer-core';
 import { listPageFragments } from './deck';
@@ -11,6 +12,13 @@ export interface ExportResult {
 }
 
 const DEFAULT_CHROMIUM_PATH = '/usr/bin/chromium';
+const EXPORT_CSS = `
+@page { size: CANVAS_WIDTHpx CANVAS_HEIGHTpx; margin: 0; }
+html, body { margin: 0; padding: 0; }
+body { background: #fff; }
+.page { position: relative; overflow: hidden; page-break-after: always; }
+[data-deck-root="true"] { position: relative; width: 100%; height: 100%; }
+`.trim();
 
 export function buildExportHtml(
   pages: Array<{ pageId: string; fragment: string }>,
@@ -18,13 +26,14 @@ export function buildExportHtml(
 ): string {
   const { widthPx, heightPx } = canvasSpec;
   const pageStyle = `width:${widthPx}px;height:${heightPx}px;`;
+  const css = EXPORT_CSS.replace('CANVAS_WIDTH', String(widthPx)).replace('CANVAS_HEIGHT', String(heightPx));
   const pageBody = pages
     .map(
       (page) =>
         `<div class="page" data-page-id="${page.pageId}" style="${pageStyle}">${page.fragment}</div>`,
     )
     .join('\n');
-  return `<!doctype html>\n<html>\n<head>\n<meta charset="utf-8" />\n<style>\n@page { size: ${widthPx}px ${heightPx}px; margin: 0; }\nhtml, body { margin: 0; padding: 0; }\nbody { background: #fff; }\n.page { position: relative; overflow: hidden; page-break-after: always; }\n[data-deck-root=\"true\"] { position: relative; width: 100%; height: 100%; }\n</style>\n</head>\n<body>\n${pageBody}\n</body>\n</html>`;
+  return `<!doctype html>\n<html>\n<head>\n<meta charset="utf-8" />\n<style>\n${css}\n</style>\n</head>\n<body>\n${pageBody}\n</body>\n</html>`;
 }
 
 function resolveChromiumPath(): string {
@@ -64,9 +73,11 @@ export async function runExport(
         ];
 
   if (format === 'png' || format === 'pdf') {
+    const chromiumPath = resolveChromiumPath();
     try {
+      await access(chromiumPath, fsConstants.X_OK);
       const browser = await launch({
-        executablePath: resolveChromiumPath(),
+        executablePath: chromiumPath,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
       const page = await browser.newPage();
@@ -102,8 +113,11 @@ export async function runExport(
     } catch (error) {
       warnings.push({
         code: 'ERR_RENDER',
-        message: error instanceof Error ? error.message : 'Failed to render export output.',
-        suggestion: 'Ensure Chromium is installed or set WEAVELIGHT_CHROMIUM_PATH.',
+        message:
+          error instanceof Error
+            ? error.message
+            : `Failed to render export output with Chromium at ${chromiumPath}.`,
+        suggestion: `Ensure Chromium is installed or set WEAVELIGHT_CHROMIUM_PATH (current: ${chromiumPath}).`,
       });
     }
   }
