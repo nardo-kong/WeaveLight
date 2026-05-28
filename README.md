@@ -38,7 +38,7 @@ SSE 示例：
 curl -N http://127.0.0.1:3322/events
 ```
 
-## Web Editor（手动编辑）
+## Web 编辑器
 
 Engine 自带一个轻量 Web 编辑器，用于手动编辑 page fragment、拖拽布局与触发生成/导出。
 

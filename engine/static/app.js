@@ -31,6 +31,14 @@ const logEvent = (message) => {
   eventsBox.textContent = `[${now}] ${message}\n` + eventsBox.textContent;
 };
 
+function nextRpcId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  rpcCounter += 1;
+  return `web-${Date.now()}-${rpcCounter}`;
+}
+
 async function rpc(method, params = {}) {
   const res = await fetch('/rpc', {
     method: 'POST',
@@ -40,14 +48,6 @@ async function rpc(method, params = {}) {
   const payload = await res.json();
   if (payload.error) {
     throw new Error(payload.error.message || 'RPC error');
-  }
-
-  function nextRpcId() {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-      return crypto.randomUUID();
-    }
-    rpcCounter += 1;
-    return `web-${Date.now()}-${rpcCounter}`;
   }
   return payload.result;
 }

@@ -20,6 +20,6 @@
   "dependencies": {
     "adm-zip": "^0.5.17",
     "node-html-parser": "^7.1.0",
-    "puppeteer-core": "^25.1.0"
+    "puppeteer-core": "^23.11.1"
   }
 }

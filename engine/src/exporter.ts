@@ -18,9 +18,9 @@ const CHROMIUM_PATH_CANDIDATES: Record<string, string[]> = {
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   ],
   win32: [
-    'C:\\\\Program Files\\\\Chromium\\\\chromium.exe',
-    'C:\\\\Program Files (x86)\\\\Chromium\\\\chromium.exe',
-    'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+    'C:\\Program Files\\Chromium\\chromium.exe',
+    'C:\\Program Files (x86)\\Chromium\\chromium.exe',
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
   ],
 };
 function buildExportCss(canvasSpec: CanvasSpec): string {
@@ -95,7 +95,7 @@ export async function runExport(
       : [
           {
             pageId: 'page-1',
-            fragment: `<div data-deck-root=\"true\" data-page-id=\"page-1\"></div>`,
+            fragment: '<div data-deck-root="true" data-page-id="page-1"></div>',
           },
         ];
 

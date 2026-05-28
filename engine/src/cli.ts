@@ -26,9 +26,6 @@ async function tryServeStatic(req: IncomingMessage, res: ServerResponse<Incoming
     pathname === '/' || withoutPrefix === '' || withoutPrefix === '/' ? '/index.html' : withoutPrefix;
   const safePath = path.normalize(relativePath);
   const filePath = path.resolve(staticRoot, `.${safePath}`);
-  if (!filePath.startsWith(`${staticRoot}${path.sep}`)) {
-    return false;
-  }
 
   try {
     const fileStat = await stat(filePath);
