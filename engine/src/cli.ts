@@ -1,8 +1,46 @@
+import { readFile, stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
+import path from 'node:path';
 import { eventBus } from './jobs';
 import { handleRpcRequest, isJsonRpcRequest } from './rpc';
 
 const port = Number(process.env.WEAVELIGHT_ENGINE_PORT ?? 3322);
+const staticRoot = path.join(__dirname, '..', 'static');
+
+const CONTENT_TYPES: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+};
+
+async function tryServeStatic(req: { url?: string }, res: { writeHead: Function; end: Function }): Promise<boolean> {
+  if (!req.url || (!req.url.startsWith('/app') && req.url !== '/')) {
+    return false;
+  }
+
+  const url = new URL(req.url, 'http://127.0.0.1');
+  const withoutPrefix = url.pathname.replace('/app', '');
+  const relativePath =
+    url.pathname === '/' || withoutPrefix === '' || withoutPrefix === '/' ? '/index.html' : withoutPrefix;
+  const safePath = path.normalize(relativePath).replace(/^(\.\.[/\\])+/, '');
+  const filePath = path.join(staticRoot, safePath);
+
+  try {
+    const fileStat = await stat(filePath);
+    if (!fileStat.isFile()) {
+      return false;
+    }
+    const ext = path.extname(filePath);
+    const contentType = CONTENT_TYPES[ext] ?? 'application/octet-stream';
+    const body = await readFile(filePath);
+    res.writeHead(200, { 'content-type': contentType });
+    res.end(body);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const server = createServer(async (req, res) => {
   if (req.method === 'GET' && req.url === '/health') {
@@ -36,6 +74,13 @@ const server = createServer(async (req, res) => {
       unsubscribe();
     });
     return;
+  }
+
+  if (req.method === 'GET' && (req.url === '/' || req.url?.startsWith('/app'))) {
+    const served = await tryServeStatic(req, res);
+    if (served) {
+      return;
+    }
   }
 
   if (req.method !== 'POST' || req.url !== '/rpc') {

@@ -1,10 +1,34 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { launch } from 'puppeteer-core';
+import { listPageFragments } from './deck';
 import { CanvasSpec, SessionMeta } from './workspace';
 
 export interface ExportResult {
   outputPath: string;
+  outputs: string[];
   warnings: Array<{ code: string; message: string; suggestion?: string }>;
+}
+
+const DEFAULT_CHROMIUM_PATH = '/usr/bin/chromium';
+
+export function buildExportHtml(
+  pages: Array<{ pageId: string; fragment: string }>,
+  canvasSpec: CanvasSpec,
+): string {
+  const { widthPx, heightPx } = canvasSpec;
+  const pageStyle = `width:${widthPx}px;height:${heightPx}px;`;
+  const pageBody = pages
+    .map(
+      (page) =>
+        `<div class="page" data-page-id="${page.pageId}" style="${pageStyle}">${page.fragment}</div>`,
+    )
+    .join('\n');
+  return `<!doctype html>\n<html>\n<head>\n<meta charset="utf-8" />\n<style>\n@page { size: ${widthPx}px ${heightPx}px; margin: 0; }\nhtml, body { margin: 0; padding: 0; }\nbody { background: #fff; }\n.page { position: relative; overflow: hidden; page-break-after: always; }\n[data-deck-root=\"true\"] { position: relative; width: 100%; height: 100%; }\n</style>\n</head>\n<body>\n${pageBody}\n</body>\n</html>`;
+}
+
+function resolveChromiumPath(): string {
+  return process.env.WEAVELIGHT_CHROMIUM_PATH ?? DEFAULT_CHROMIUM_PATH;
 }
 
 export async function runExport(
@@ -27,6 +51,71 @@ export async function runExport(
     });
   }
 
+  const outputs: string[] = [];
+  const pages = await listPageFragments(sessionPath);
+  const exportPages =
+    pages.length > 0
+      ? pages
+      : [
+          {
+            pageId: 'page-1',
+            fragment: `<div data-deck-root=\"true\" data-page-id=\"page-1\"></div>`,
+          },
+        ];
+
+  if (format === 'png' || format === 'pdf') {
+    try {
+      const browser = await launch({
+        executablePath: resolveChromiumPath(),
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+      const page = await browser.newPage();
+      await page.setViewport({
+        width: canvasSpec.widthPx,
+        height: canvasSpec.heightPx,
+        deviceScaleFactor: canvasSpec.renderScale || 1,
+      });
+      await page.emulateMediaType('screen');
+
+      if (format === 'png') {
+        for (const pageFragment of exportPages) {
+          const html = buildExportHtml([pageFragment], canvasSpec);
+          await page.setContent(html, { waitUntil: 'load' });
+          const outputPath = path.join(exportDir, `${pageFragment.pageId}.png`);
+          await page.screenshot({ path: outputPath });
+          outputs.push(outputPath);
+        }
+      } else {
+        const html = buildExportHtml(exportPages, canvasSpec);
+        await page.setContent(html, { waitUntil: 'load' });
+        const outputPath = path.join(exportDir, `export.pdf`);
+        await page.pdf({
+          path: outputPath,
+          printBackground: true,
+          preferCSSPageSize: true,
+        });
+        outputs.push(outputPath);
+      }
+
+      await page.close();
+      await browser.close();
+    } catch (error) {
+      warnings.push({
+        code: 'ERR_RENDER',
+        message: error instanceof Error ? error.message : 'Failed to render export output.',
+        suggestion: 'Ensure Chromium is installed or set WEAVELIGHT_CHROMIUM_PATH.',
+      });
+    }
+  }
+
+  if (outputs.length === 0) {
+    warnings.push({
+      code: 'WARN_EXPORT_FORMAT',
+      message: `No renderer available for format ${format}; export produced metadata only.`,
+      suggestion: 'Use format png or pdf to generate files.',
+    });
+  }
+
   const result = {
     sessionId: sessionMeta.sessionId,
     format,
@@ -34,9 +123,10 @@ export async function runExport(
     fontManifestRef: fontManifestRef ?? sessionMeta.fontManifest,
     generatedAt: new Date().toISOString(),
     warnings,
+    outputs,
   };
 
   const outputPath = path.join(exportDir, 'export-result.json');
   await writeFile(outputPath, JSON.stringify(result, null, 2), 'utf8');
-  return { outputPath, warnings };
+  return { outputPath, outputs, warnings };
 }
