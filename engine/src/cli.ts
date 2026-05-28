@@ -1,4 +1,4 @@
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, realpath, stat } from 'node:fs/promises';
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import path from 'node:path';
 import { eventBus } from './jobs';
@@ -33,6 +33,11 @@ async function tryServeStatic(req: IncomingMessage, res: ServerResponse<Incoming
   try {
     const fileStat = await stat(filePath);
     if (!fileStat.isFile()) {
+      return false;
+    }
+    const resolvedRoot = await realpath(staticRoot);
+    const resolvedFile = await realpath(filePath);
+    if (!resolvedFile.startsWith(`${resolvedRoot}${path.sep}`)) {
       return false;
     }
     const ext = path.extname(filePath);

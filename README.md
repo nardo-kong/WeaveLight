@@ -49,7 +49,7 @@ cd engine
 npm run start
 ```
 
-2) 打开浏览器：
+2) 打开浏览器（`/app` 或 `/app/` 均可）：
 
 ```
 http://127.0.0.1:3322/app

@@ -8,6 +8,7 @@ const state = {
   dragging: null,
 };
 
+let rpcCounter = 0;
 const el = (id) => document.getElementById(id);
 const engineStatus = el('engine-status');
 const workspaceInput = el('workspace-path');
@@ -34,11 +35,19 @@ async function rpc(method, params = {}) {
   const res = await fetch('/rpc', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: `${Date.now()}`, method, params }),
+    body: JSON.stringify({ jsonrpc: '2.0', id: nextRpcId(), method, params }),
   });
   const payload = await res.json();
   if (payload.error) {
     throw new Error(payload.error.message || 'RPC error');
+  }
+
+  function nextRpcId() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    rpcCounter += 1;
+    return `web-${Date.now()}-${rpcCounter}`;
   }
   return payload.result;
 }
@@ -268,7 +277,7 @@ function setupEvents() {
     });
   });
   source.onerror = () => {
-    logEvent(`SSE disconnected (readyState=${source.readyState})`);
+    logEvent(`SSE disconnected (readyState=${source.readyState}). Check if the engine is running at this URL.`);
   };
 }
 
